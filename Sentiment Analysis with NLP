@@ -1,0 +1,82 @@
+# Sentiment Analysis on Movie Reviews
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+import re
+import nltk
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+
+# Download required NLTK data
+nltk.download('stopwords')
+nltk.download('wordnet')
+nltk.download('omw-1.4')
+
+# Sample movie reviews dataset (in practice, load from a real dataset like IMDB)
+reviews = [
+    "This movie was absolutely fantastic! I loved every minute of it.",
+    "Terrible film, waste of time and money. Do not recommend.",
+    "Amazing performance by the actors. A must watch!",
+    "Boring and predictable plot. Very disappointing.",
+    "One of the best movies I've seen this year. Highly recommended!",
+    "Awful movie. Poor acting and terrible storyline.",
+    "Exceptional cinematography and brilliant direction.",
+    "Worst movie ever. I walked out halfway through.",
+    "Incredible story with great character development.",
+    "Waste of time. Nothing special about this film."
+]
+labels = [1, 0, 1, 0, 1, 0, 1, 0, 1, 0]  # 1 = positive, 0 = negative
+
+# Text preprocessing function
+def preprocess_text(text):
+    # Convert to lowercase
+    text = text.lower()
+    # Remove special characters and digits
+    text = re.sub(r'[^a-zA-Z\s]', '', text)
+    # Tokenize
+    tokens = text.split()
+    # Remove stopwords
+    stop_words = set(stopwords.words('english'))
+    tokens = [word for word in tokens if word not in stop_words]
+    # Lemmatization
+    lemmatizer = WordNetLemmatizer()
+    tokens = [lemmatizer.lemmatize(word) for word in tokens]
+    return ' '.join(tokens)
+
+# Preprocess all reviews
+processed_reviews = [preprocess_text(review) for review in reviews]
+
+# Create TF-IDF features
+vectorizer = TfidfVectorizer(max_features=100)
+X = vectorizer.fit_transform(processed_reviews)
+y = np.array(labels)
+
+# Split data
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+# Train Logistic Regression model
+model = LogisticRegression(random_state=42)
+model.fit(X_train, y_train)
+
+# Predictions
+y_pred = model.predict(X_test)
+
+# Evaluation
+accuracy = accuracy_score(y_test, y_pred)
+print(f"Accuracy: {accuracy:.4f}")
+print("\nClassification Report:")
+print(classification_report(y_test, y_pred, target_names=['Negative', 'Positive']))
+print("\nConfusion Matrix:")
+print(confusion_matrix(y_test, y_pred))
+
+# Test on new review
+new_review = "This movie was great and entertaining!"
+processed_new = preprocess_text(new_review)
+new_features = vectorizer.transform([processed_new])
+prediction = model.predict(new_features)[0]
+sentiment = 'Positive' if prediction == 1 else 'Negative'
+print(f"\nNew Review: '{new_review}'")
+print(f"Predicted Sentiment: {sentiment}")
